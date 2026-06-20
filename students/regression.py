@@ -38,7 +38,15 @@ def train_elasticnet_grid(X_train, y_train, l1_ratios, alphas):
     #   - Calculate R² score on training data
     #   - Store results
     # - Return DataFrame with results
-    pass
+    results = []
+    for l1_ratio in l1_ratios:
+        for alpha in alphas:
+            model = ElasticNet(alpha=alpha, l1_ratio=l1_ratio, max_iter=5000)
+            model.fit(X_train, y_train)
+            y_pred = model.predict(X_train)
+            r2 = r2_score(y_train, y_pred)
+            results.append({'l1_ratio': l1_ratio, 'alpha': alpha, 'r2_score': r2, 'model': model})
+    return pd.DataFrame(results)
 
 
 def create_r2_heatmap(results_df, l1_ratios, alphas, output_path=None):
@@ -68,7 +76,15 @@ def create_r2_heatmap(results_df, l1_ratios, alphas, output_path=None):
     # - Add colorbar
     # - Save to output_path if provided
     # - Return figure object
-    pass
+    heatmap_data = results_df.pivot(index='alpha', columns='l1_ratio', values='r2_score')
+    fig, ax = plt.subplots(figsize=(8, 6))
+    sns.heatmap(heatmap_data, annot=True, fmt=".3f", cmap="viridis", ax=ax)
+    ax.set_xlabel('L1 Ratio')   
+    ax.set_ylabel('Alpha')
+    ax.set_title('ElasticNet R² Heatmap') 
+    if output_path:
+        fig.savefig(output_path, bbox_inches='tight')
+    return fig
 
 
 def get_best_elasticnet_model(X_train, y_train, X_test, y_test, 
@@ -111,4 +127,29 @@ def get_best_elasticnet_model(X_train, y_train, X_test, y_test,
     # - Train models using train_elasticnet_grid
     # - Select model with highest test R² (not training R²)
     # - Return dictionary with best model and parameters
-    pass
+    results_df = train_elasticnet_grid(X_train, y_train, l1_ratios, alphas)
+    best_test_r2 = -np.inf
+    best_model = None
+    best_alpha = None
+    best_l1_ratio = None
+    for _, row in results_df.iterrows():
+        model = ElasticNet(alpha=row['alpha'], l1_ratio=row['l1_ratio'], max_iter=5000)
+        model.fit(X_train, y_train)
+        y_test_pred = model.predict(X_test)
+        test_r2 = r2_score(y_test, y_test_pred)
+        if test_r2 > best_test_r2:
+            best_test_r2 = test_r2
+            best_model = model
+            best_alpha = row['alpha']
+            best_l1_ratio = row['l1_ratio']
+            train_pred = model.predict(X_train)
+            train_r2 = r2_score(y_train, train_pred)
+
+    return {
+        'model': best_model,
+        'best_l1_ratio': best_l1_ratio,
+        'best_alpha': best_alpha,
+        'train_r2': train_r2,
+        'test_r2': test_r2,
+        'results_df': results_df
+    }
