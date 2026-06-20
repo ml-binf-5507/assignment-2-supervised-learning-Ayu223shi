@@ -101,11 +101,10 @@ def prepare_regression_data(df, target='chol'):
     # - Remove rows with missing chol values
     # - Exclude chol from features
     # - Return X (features) and y (target)
-    df = df.dropna(subset=[target])
+    df = df.dropna(subset=[target]) # Remove rows with missing target
     X = df.drop(columns=[target])
     y = df[target]
     return X, y
-
 
 def prepare_classification_data(df, target='num'):
     """
