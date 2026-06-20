@@ -128,12 +128,12 @@ def prepare_classification_data(df, target='num'):
     # - Exclude target from features
     # - Exclude chol from features
     # - Return X (features) and y (target)
-    df = df.copy()
-    y = (df[target] > 0).astype(int) 
-    drop_cols = [target]
-    if 'chol' in df.columns:
-        drop_cols.append('chol')
-        X = df.drop(columns=drop_cols)
+    if target not in df.columns:
+        target = 'num'
+    y = (df[target] > 0).astype(int) # Binarize target
+    X = df.drop(columns=[target], errors='ignore') 
+    if 'chol' in X.columns:
+        X = X.drop(columns=['chol']) 
     return X, y
 
 
